@@ -1,102 +1,188 @@
-'use strict';
+"use strict";
 
-const express = require('express');
-const cors = require ('cors');
-require('dotenv').config();
-const mongoose = require('mongoose');
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+const mongoose = require("mongoose");
 const PORT = process.env.PORT;
 const server = express();
 server.use(cors());
 server.use(express.json());
-const allChocalateData = require('./data/allChocalateData');
-const { default: axios } = require('axios');
+const axios = require("axios");
 
-mongoose.connect(`${process.env.MONGO_LINK}`, {useNewUrlParser: true,useUnifiedTopology: true});
-
-server.get('/chocolate',getchocolateHandler);
-
-
-async function getchocolateHandler (request,response){
-
-let seacrchQuery=request.query.seacrchQuery;
-
-let url =`https://ltuc-asac-api.herokuapp.com/allChocolateData`
-
-try { 
-axios.get(url).then((chocolateresult)=> { 
-
-let chocolatearray = chocolateresult.data.map((item)=>{ 
-
-
-return new chocoltess(item);
-
+mongoose.connect(`${process.env.MONGO_LINK}`, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
-response.send(chocolatearray)
+
+
+
+const choSchema =new mongoose.Schema({
+
+email:String,
+url:String,
+title:String,
 })
 
-} catch (error) {
+const choModel = mongoose.model("chocolates",choSchema);
 
-response.send(error)
-}
-}
+//====================ROUTES==================
 
-class chocoltess { 
-
-    constructor(chocoooData) {
-
-        this.title=chocoooData.title;
-        this.imageUrl=chocoooData.imageUrl;
-    }
-}
+server.get('/chocolate', getchocolateHandler);
+server.get('/getdata',getDataHandler);
+server.post('/addData',addDataHandler);
+server.delete('/deleteChoco/:id',deleteDataHandler);
+server.put('/updateData/:id',updateDataHandler)
 
 
+//======================Get allChocolate DATA==============
+ function getchocolateHandler(request, response) {
 
-
-// const choschema =new mongoose.Schema({
-
-// title:String, 
-// imageUrl:String
-// })
-
-
-// const choModel = mongoose.model('chocolates',choschema);
-
-
-// function seedData(){
-// const cho1 = new choModel({
-
-//     title:"Ferrero - Rocher 375g",
-//     imageUrl: "https://images.shopdutyfree.com/image/upload/c_pad,f_auto,h_350,w_350/v1584691684/030/001/001/9800012701/9800012701_1_default_default.jpg"
-// })
-
-// const cho2 = new choModel({
-
-//     title:"Ferrero - Rocher 375g",
-//     imageUrl: "https://images.shopdutyfree.com/image/upload/c_pad,f_auto,h_350,w_350/v1584691684/030/001/001/9800012701/9800012701_1_default_default.jpg"
-// })
-// cho1.save();
-// cho2.save();
-// }
-// seedData();
-
-server.get('/test',(request,response)=>{
-
-
-
-        response.send('your server is working');
+  let url = `https://ltuc-asac-api.herokuapp.com/allChocolateData`;
+  try {
+    axios.get(url).then((chocolateresult) => {
+      let chocolatearray = chocolateresult.data.map((item) => {
+        return new chocoltess(item);
+      });
+      response.send(chocolatearray);
     });
+  } catch (error) {
+    response.send(error);
+  }
+
+}
+
+class chocoltess {
+  constructor(element) {
+    this.title = element.title;
+    this.url = element.imageUrl;
+  }
+}
+
+//======================ADD Data Handler==============
+
+async function addDataHandler(request,response){
+
+  let {email,title,url}=request.body;
+
+  await choModel.create({email,title,url});
+  // choModel.find({email},function(err,data){
+
+  //   if(err){
+  //     console.log('error')
+  //   }else {
+  //     response.send(data)
+  //   }
+  // })
+ 
+}
+
+
+//======================Get Data Handler==============
+
+function getDataHandler(request,response){
+
+  let email = request.query.email;
+
+  choModel.find({email:email},function(err,ownerData){
+
+if (err){
+
+  response.send('Error in geting Data')
+} else {
+  response.send(ownerData)
+}
+  })
+
+
+}
 
 
 
+//=========================Delete Data Handler================
 
 
+async function deleteDataHandler(request,response){
+
+  let email = request.query.email;
+  let chocoID = request.params.id;
 
 
+  choModel.remove({_id:chocoID},(err,ownerData)=>{
+
+   if (err){
+     console.log('error in delete data')
+   }else {
+
+  choModel.find({email:email},function(err,chocolatesData){
+
+    if (err){console.log('error in deleting chocolate')
+  }else {
+response.send(chocolatesData)
+    
+  }
+  })
+  }
+  })
+
+} 
 
 
+//===========================Update Data=============
 
-server.listen(PORT,()=> { 
+async function updateDataHandler(request,response){
 
-console.log(`LESTINING ON PORT ${PORT}`)
+let chocoID = request.params.id;
+let {email,title,url}=request.body;
+
+choModel.findOne({_id:chocoID},(err,ownerData)=>{
+
+
+ownerData.title=title;
+ownerData.url=url;
+ownerData.email=email;
+
+ownerData.save();
+
+if (err) {
+  console.log('error in update data')
+}else {
+
+  choModel.find({email:email},function(err,chocoData){
+
+   if(err) {
+     console.log('error in updaaate data')
+   }else {
+     response.send(chocoData)
+  
+  }
+
+  })
+
+}
 
 })
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+server.get("/test", (request, response) => {
+  response.send("your server is working");
+});
+
+server.listen(PORT, () => {
+  console.log(`LESTINING ON PORT ${PORT}`);
+});
