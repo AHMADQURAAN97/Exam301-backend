@@ -36,7 +36,7 @@ server.put('/updateData/:id',updateDataHandler)
 
 
 //======================Get allChocolate DATA==============
- function getchocolateHandler(request, response) {
+  function getchocolateHandler(request, response) {
 
   let url = `https://ltuc-asac-api.herokuapp.com/allChocolateData`;
   try {
@@ -52,12 +52,16 @@ server.put('/updateData/:id',updateDataHandler)
 
 }
 
+
 class chocoltess {
-  constructor(element) {
-    this.title = element.title;
-    this.url = element.imageUrl;
-  }
+ constructor(element) {
+   this.title = element.title;
+   this.url = element.imageUrl;
+ }
 }
+
+// let result = await axios.get(`https://ltuc-asac-api.herokuapp.com/allChocolateData`);
+// response.send(result.data)
 
 //======================ADD Data Handler==============
 
